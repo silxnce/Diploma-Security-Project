@@ -1,0 +1,60 @@
+# docker compose up --build
+# docker compose down -v
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: diploma_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: security_project
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+# docker compose exec backend npm run seed
+  backend:
+    build: ./backend
+    container_name: diploma_backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+    #   DB_PORT: 5432
+    #   DB_USERNAME: postgres
+    #   DB_PASSWORD: postgres
+    #   DB_NAME: security_project
+    #   JWT_SECRET: SECRET_KEY
+    #   TURNSTILE_SECRET_KEY: secret_key
+      FRONTEND_URL: https://localhost
+
+  frontend:
+    build: ./frontend
+    container_name: diploma_frontend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: /api
+    #   NEXT_PUBLIC_TURNSTILE_SITE_KEY: site_key
+
+  nginx:
+    image: nginx:alpine
+    container_name: diploma_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/certs:/etc/nginx/certs
+
+volumes:
+  postgres_data:
